@@ -95,15 +95,16 @@ const Checkout: React.FC = () => {
     try {
       const selectedBuyLink = BUYLINKS[selectedPlan];
       if (selectedBuyLink) {
-        const url = new URL(selectedBuyLink);
-        // Append user data for webhook mapping
-        if (auth?.user?.email) url.searchParams.set('email', auth.user.email);
-        if (userId) url.searchParams.set('external_reference', userId);
-        url.searchParams.set('return_url', `${window.location.origin}/verify-success`);
-        url.searchParams.set('cancel_url', `${window.location.origin}/checkout`);
-        // Redirect to the BuyLink
-        console.log('Redirecting to BuyLink:', url.toString());
-        window.location.href = url.toString();
+        // Append user data by string concat to preserve original encoding
+        const sep = selectedBuyLink.includes('?') ? '&' : '?';
+        const parts: string[] = [];
+        if (auth?.user?.email) parts.push(`email=${encodeURIComponent(auth.user.email)}`);
+        if (userId) parts.push(`external_reference=${encodeURIComponent(userId)}`);
+        parts.push(`return_url=${encodeURIComponent(`${window.location.origin}/verify-success`)}`);
+        parts.push(`cancel_url=${encodeURIComponent(`${window.location.origin}/checkout`)}`);
+        const finalUrl = selectedBuyLink + sep + parts.join('&');
+        console.log('Redirecting to BuyLink (preserve encoding):', finalUrl);
+        window.location.href = finalUrl;
         return;
       }
 
