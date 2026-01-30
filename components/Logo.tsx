@@ -11,9 +11,11 @@ interface LogoProps {
  * Returns the original technical brand icon for Elymand.
  */
 export const Logo: React.FC<LogoProps> = ({ className = "", size = 32 }) => {
+  // Prefer using the project logo image if present
+  const logoPath = '/image/logo/Logo.jpg';
   return (
-    <div className={`flex items-center justify-center text-violet-600 ${className}`}>
-      <ShieldCheck size={size} strokeWidth={2.5} />
+    <div className={`flex items-center justify-center ${className}`}>
+      <img src={logoPath} alt="Elymand" style={{ width: size * 1.5, height: 'auto', objectFit: 'contain' }} />
     </div>
   );
 };

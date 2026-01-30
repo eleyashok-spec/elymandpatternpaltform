@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
-import { Mail, Lock, User, ArrowLeft, AlertCircle, CheckCircle2, Loader2, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, AlertCircle, CheckCircle2, Loader2, ChevronRight } from 'lucide-react';
+import { Logo } from '../components/Logo';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -77,9 +78,9 @@ const Register: React.FC = () => {
             </div>
 
             <div className="flex justify-center mb-6">
-               <div className="w-16 h-16 bg-slate-900 text-violet-400 rounded-2xl flex items-center justify-center shadow-2xl">
-                  <ShieldCheck className="w-8 h-8" />
-               </div>
+              <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-2xl">
+                <Logo size={40} />
+              </div>
             </div>
             <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-3">
               Create Account
