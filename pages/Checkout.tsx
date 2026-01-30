@@ -77,15 +77,38 @@ const Checkout: React.FC = () => {
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
-    // Simulate real bank/payment gateway processing time
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    
-    let subPlan: any = 'Pro';
-    if (selectedPlan === 'All Access Membership' || selectedPlan === 'Full Access') subPlan = 'All Access';
-    
-    subscribe(subPlan);
-    setIsProcessing(false);
-    navigate('/dashboard');
+
+    // Get user ID from auth
+    const userId = auth?.user?.id || '';
+    if (!userId) {
+      alert('Please log in before checkout');
+      setIsProcessing(false);
+      return;
+    }
+
+    // 2Checkout Parameters
+    const params = new URLSearchParams({
+      sid: '378825', // Your 2Checkout Merchant ID
+      mode: '2CO',
+      li_0_name: selectedPlan,
+      li_0_price: planDetails.price,
+      li_0_quantity: '1',
+      li_0_type: 'subscription',
+      li_0_billing_cycle: 'monthly',
+      li_0_duration: 0, // Recurring (0 = until cancelled)
+      card_holder_name: (e.target as any).cardholder_name?.value || '',
+      email: auth?.user?.email || '',
+      external_reference: userId, // Pass user ID for webhook mapping
+      currency_code: 'USD',
+      buylink_id: selectedPlan === 'Full Access' || selectedPlan === 'All Access Membership' ? '2' : '1',
+      return_url: `${window.location.origin}/verify-success`,
+      cancel_url: `${window.location.origin}/checkout`,
+      language: 'en',
+      customer_note: `Subscription to ${selectedPlan}`,
+    });
+
+    // Redirect to 2Checkout hosted checkout
+    window.location.href = `https://secure.2checkout.com/checkout/purchase?${params.toString()}`;
   };
 
   return (
@@ -188,7 +211,8 @@ const Checkout: React.FC = () => {
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Cardholder Name</label>
                     <input 
-                      type="text" 
+                      type="text"
+                      name="cardholder_name"
                       required
                       placeholder="Enter the name on your card" 
                       className="w-full bg-slate-50 border border-slate-100 rounded-xl p-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-600 transition-all placeholder:text-slate-300" 
