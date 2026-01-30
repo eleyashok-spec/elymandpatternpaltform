@@ -188,8 +188,13 @@ const Admin: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     setMasterFile(file);
+    setStatusMessage(`Master file selected: ${file.name}`);
+    
+    // Only auto-process if it's an image file AND no preview has been manually uploaded
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'webp'].includes(ext || '') && !previewFile) processPreview(file);
+    if (['jpg', 'jpeg', 'png', 'webp'].includes(ext || '') && !watermarkedFile) {
+      processPreview(file);
+    }
   };
 
   const processPreview = async (file: File) => {
@@ -214,13 +219,19 @@ const Admin: React.FC = () => {
   };
 
   const handleDeploy = async () => {
-    if (!masterFile || !watermarkedFile || !form.title) return;
+    if (!masterFile || !watermarkedFile || !form.title) {
+      setErrorMessage('Missing required fields: Master file, preview image, and title are required');
+      return;
+    }
     setIsSaving(true);
     try {
-      setStatusMessage('Uploading to Cloud...');
+      setStatusMessage('Uploading preview image...');
       const thumbUrl = await uploadFile(watermarkedFile, 'previews');
+      setStatusMessage('Uploading master file...');
       const masterUrl = await uploadFile(masterFile, 'masters');
       const assetId = Math.random().toString(36).substring(2, 10).toUpperCase();
+      
+      setStatusMessage(`Publishing ${studioMode}...`);
       if (studioMode === 'pattern') {
         await addPattern({ id: assetId, title: form.title, description: form.description, category: form.category, status: PatternStatus.PUBLISHED, thumbnail: thumbUrl, downloadUrl: masterUrl, createdAt: new Date().toISOString(), tags: form.tags, formats: form.formats });
       } else {
@@ -228,7 +239,10 @@ const Admin: React.FC = () => {
       }
       setShowSuccess(true);
       setTimeout(() => { setIsStudioOpen(false); refreshData(); setShowSuccess(false); }, 1500);
-    } catch (e: any) { setErrorMessage(e.message); }
+    } catch (e: any) { 
+      console.error('Deploy error:', e);
+      setErrorMessage(`Upload failed: ${e.message}`); 
+    }
     finally { setIsSaving(false); setStatusMessage(''); }
   };
 
