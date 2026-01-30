@@ -1,6 +1,5 @@
 
 import React from 'react';
-import logoSrc from '../image/logo/Logo.jpg';
 
 interface LogoProps {
   className?: string;
@@ -11,9 +10,11 @@ interface LogoProps {
  * Returns the original technical brand icon for Elymand.
  */
 export const Logo: React.FC<LogoProps> = ({ className = "", size = 32 }) => {
+  // Use absolute path to avoid bundler resolution during build
+  const logoPath = '/image/logo/Logo.jpg';
   return (
     <div className={`flex items-center justify-center ${className}`}>
-      <img src={logoSrc} alt="Elymand" style={{ width: size * 1.5, height: 'auto', objectFit: 'contain' }} />
+      <img src={logoPath} alt="Elymand" style={{ width: size * 1.5, height: 'auto', objectFit: 'contain' }} />
     </div>
   );
 };
