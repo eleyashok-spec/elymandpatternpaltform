@@ -86,28 +86,65 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    // Build query parameters for 2Checkout direct URL
-    const params = new URLSearchParams();
-    params.append('sid', '255895324825'); // Your Merchant ID
-    params.append('mode', '2CO');
-    params.append('email', auth?.user?.email || '');
-    params.append('external_reference', userId);
-    params.append('currency_code', 'USD');
-    params.append('language', 'en');
-    params.append('return_url', `${window.location.origin}/verify-success`);
-    params.append('cancel_url', `${window.location.origin}/checkout`);
-    
-    // Add product line item
-    params.append('li_0_name', selectedPlan);
-    params.append('li_0_price', planDetails.price);
-    params.append('li_0_quantity', '1');
-    params.append('li_0_type', 'subscription');
-    params.append('li_0_billing_cycle', 'monthly');
-    params.append('li_0_duration', '0');
-    
-    const checkoutUrl = `https://secure.2checkout.com/checkout/purchase?${params.toString()}`;
-    console.log('Redirecting to:', checkoutUrl);
-    window.location.href = checkoutUrl;
+    // 2Checkout Direct API approach - create a session and redirect
+    try {
+      // Your 2Checkout API credentials should be in environment
+      const merchantId = '255895324825';
+      
+      // For testing, use the sandbox URL
+      const checkoutSessionUrl = `https://secure.2checkout.com/checkout/api/payment/create-checkout-session`;
+      
+      const checkoutData = {
+        merchantId: merchantId,
+        currency: 'USD',
+        items: [
+          {
+            name: selectedPlan,
+            price: planDetails.price,
+            quantity: 1,
+            type: 'subscription',
+            billingCycle: 'monthly',
+            duration: 0
+          }
+        ],
+        customData: {
+          userId: userId,
+          userEmail: auth?.user?.email
+        },
+        returnUrl: `${window.location.origin}/verify-success`,
+        cancelUrl: `${window.location.origin}/checkout`
+      };
+
+      // If you have API integration, use this approach
+      // For now, fall back to direct URL with properly formatted params
+      const params = new URLSearchParams();
+      params.append('sid', merchantId);
+      params.append('mode', '2CO');
+      params.append('email', auth?.user?.email || '');
+      params.append('external_reference', userId);
+      params.append('currency_code', 'USD');
+      params.append('language', 'en');
+      params.append('return_url', `${window.location.origin}/verify-success`);
+      params.append('cancel_url', `${window.location.origin}/checkout`);
+      params.append('test_mode', '0');
+      
+      // Add product line item with proper formatting
+      params.append('li_0_name', selectedPlan);
+      params.append('li_0_price', planDetails.price);
+      params.append('li_0_quantity', '1');
+      
+      const checkoutUrl = `https://secure.2checkout.com/checkout/purchase?${params.toString()}`;
+      console.log('2Checkout URL:', checkoutUrl);
+      console.log('Merchant ID:', merchantId);
+      console.log('Plan:', selectedPlan, 'Price:', planDetails.price);
+      
+      // Redirect to 2Checkout
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Checkout initialization failed. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   return (
