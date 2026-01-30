@@ -44,8 +44,8 @@ const RefundPolicy: React.FC = () => {
               <p className="text-slate-600 text-lg leading-relaxed font-medium">
                 You have full control over your <b>Subscription</b>. You may cancel your membership at any time without penalty or long-term obligation.
               </p>
-              <ul className="space-y-3 text-slate-500 text-sm font-medium">
-                <li className="flex items-start">• <b>Method:</b> Cancel directly via your <b>Dashboard > Account Settings > Subscription Management</b>.</li>
+                <ul className="space-y-3 text-slate-500 text-sm font-medium">
+                <li className="flex items-start">• <b>Method:</b> Cancel directly via your <b>Dashboard &gt; Account Settings &gt; Subscription Management</b>.</li>
                 <li className="flex items-start">• <b>Access:</b> Upon cancellation, your access to the <b>Master Archive</b> and all commercial rights will remain active until the end of your current paid billing cycle.</li>
                 <li className="flex items-start">• <b>Renewal:</b> Once cancelled, no further automatic charges will be processed.</li>
               </ul>

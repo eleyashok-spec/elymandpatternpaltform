@@ -115,7 +115,7 @@ const TermsOfService: React.FC = () => {
               </p>
               <div className="bg-violet-50 p-6 rounded-2xl border border-violet-100">
                 <p className="text-xs text-violet-700 font-black uppercase tracking-widest leading-relaxed">
-                  How to cancel: Visit your Dashboard > Account Settings > <b>Cancel Subscription</b>. Your access will stay active until the end of your current paid billing month.
+                  How to cancel: Visit your Dashboard &gt; Account Settings &gt; <b>Cancel Subscription</b>. Your access will stay active until the end of your current paid billing month.
                 </p>
               </div>
             </div>
