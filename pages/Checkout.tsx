@@ -93,7 +93,7 @@ const Checkout: React.FC = () => {
     form.style.display = 'none';
 
     const fields = {
-      sid: '378825', // Replace with your actual 2Checkout Merchant ID
+      sid: '255895324825', // Your 2Checkout Merchant ID
       mode: '2CO',
       li_0_name: selectedPlan,
       li_0_price: planDetails.price,
