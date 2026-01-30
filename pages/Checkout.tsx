@@ -86,29 +86,40 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    // 2Checkout Parameters
-    const params = new URLSearchParams({
-      sid: '378825', // Your 2Checkout Merchant ID
+    // Create hidden form for 2Checkout submission
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://secure.2checkout.com/checkout/purchase';
+    form.style.display = 'none';
+
+    const fields = {
+      sid: '378825', // Replace with your actual 2Checkout Merchant ID
       mode: '2CO',
       li_0_name: selectedPlan,
       li_0_price: planDetails.price,
       li_0_quantity: '1',
       li_0_type: 'subscription',
       li_0_billing_cycle: 'monthly',
-      li_0_duration: 0, // Recurring (0 = until cancelled)
-      card_holder_name: (e.target as any).cardholder_name?.value || '',
+      li_0_duration: 0, // 0 = recurring until cancelled
       email: auth?.user?.email || '',
       external_reference: userId, // Pass user ID for webhook mapping
       currency_code: 'USD',
-      buylink_id: selectedPlan === 'Full Access' || selectedPlan === 'All Access Membership' ? '2' : '1',
       return_url: `${window.location.origin}/verify-success`,
       cancel_url: `${window.location.origin}/checkout`,
       language: 'en',
-      customer_note: `Subscription to ${selectedPlan}`,
+    };
+
+    Object.entries(fields).forEach(([key, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = String(value);
+      form.appendChild(input);
     });
 
-    // Redirect to 2Checkout hosted checkout
-    window.location.href = `https://secure.2checkout.com/checkout/purchase?${params.toString()}`;
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
   };
 
   return (
@@ -209,37 +220,36 @@ const Checkout: React.FC = () => {
 
               <form onSubmit={handlePayment} className="space-y-6">
                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Cardholder Name</label>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Email Address</label>
                     <input 
-                      type="text"
-                      name="cardholder_name"
-                      required
-                      placeholder="Enter the name on your card" 
-                      className="w-full bg-slate-50 border border-slate-100 rounded-xl p-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-600 transition-all placeholder:text-slate-300" 
+                      type="email"
+                      value={auth?.user?.email || ''}
+                      disabled
+                      className="w-full bg-slate-50 border border-slate-100 rounded-xl p-5 text-sm font-bold text-slate-900 outline-none placeholder:text-slate-300 opacity-70" 
                     />
                  </div>
 
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Card Number</label>
-                    <div className="relative">
+                    <div className="relative opacity-50 pointer-events-none">
                        <input 
                         type="text" 
-                        required
-                        placeholder="0000 0000 0000 0000" 
-                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-5 pl-14 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-600 transition-all placeholder:text-slate-300" 
+                        disabled
+                        placeholder="Processing through 2Checkout Secure Gateway" 
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl p-5 pl-14 text-sm font-bold text-slate-900 outline-none placeholder:text-slate-300" 
                        />
                        <CreditCard className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-2 gap-6">
+                 <div className="grid grid-cols-2 gap-6 opacity-50 pointer-events-none">
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Expiry Date</label>
                        <input 
                          type="text" 
-                         required
+                         disabled
                          placeholder="MM / YY" 
-                         className="w-full bg-slate-50 border border-slate-100 rounded-xl p-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-600 transition-all placeholder:text-slate-300 text-center" 
+                         className="w-full bg-slate-50 border border-slate-100 rounded-xl p-5 text-sm font-bold text-slate-900 outline-none placeholder:text-slate-300 text-center" 
                        />
                     </div>
                     <div className="space-y-2">
@@ -247,9 +257,9 @@ const Checkout: React.FC = () => {
                        <div className="relative">
                           <input 
                             type="password" 
-                            required
+                            disabled
                             placeholder="***" 
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-5 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-600 transition-all placeholder:text-slate-300 text-center" 
+                            className="w-full bg-slate-50 border border-slate-100 rounded-xl p-5 text-sm font-bold text-slate-900 outline-none placeholder:text-slate-300 text-center" 
                           />
                           <Lock className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                        </div>
