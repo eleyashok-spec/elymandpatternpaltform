@@ -86,37 +86,29 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    // 2Checkout Direct API approach - create a session and redirect
-    try {
-      // Your 2Checkout API credentials should be in environment
-      const merchantId = '255895324825';
-      
-      // For testing, use the sandbox URL
-      const checkoutSessionUrl = `https://secure.2checkout.com/checkout/api/payment/create-checkout-session`;
-      
-      const checkoutData = {
-        merchantId: merchantId,
-        currency: 'USD',
-        items: [
-          {
-            name: selectedPlan,
-            price: planDetails.price,
-            quantity: 1,
-            type: 'subscription',
-            billingCycle: 'monthly',
-            duration: 0
-          }
-        ],
-        customData: {
-          userId: userId,
-          userEmail: auth?.user?.email
-        },
-        returnUrl: `${window.location.origin}/verify-success`,
-        cancelUrl: `${window.location.origin}/checkout`
-      };
+    // If you have pre-generated BuyLinks in 2Checkout, use them (preferred)
+    const BUYLINKS: Record<string, string> = {
+      'Pro Membership (Patterns)': 'https://secure.2checkout.com/checkout/buy?merchant=255895324825&tpl=default&prod=FBU0E7MJ22%3BN7UQ496RVU&qty=1%3B1'
+      // Add other plan mappings here when available
+    };
 
-      // If you have API integration, use this approach
-      // For now, fall back to direct URL with properly formatted params
+    try {
+      const selectedBuyLink = BUYLINKS[selectedPlan];
+      if (selectedBuyLink) {
+        const url = new URL(selectedBuyLink);
+        // Append user data for webhook mapping
+        if (auth?.user?.email) url.searchParams.set('email', auth.user.email);
+        if (userId) url.searchParams.set('external_reference', userId);
+        url.searchParams.set('return_url', `${window.location.origin}/verify-success`);
+        url.searchParams.set('cancel_url', `${window.location.origin}/checkout`);
+        // Redirect to the BuyLink
+        console.log('Redirecting to BuyLink:', url.toString());
+        window.location.href = url.toString();
+        return;
+      }
+
+      // Fallback: build a direct purchase URL (may require dynamic pricing enabled)
+      const merchantId = '255895324825';
       const params = new URLSearchParams();
       params.append('sid', merchantId);
       params.append('mode', '2CO');
@@ -126,19 +118,11 @@ const Checkout: React.FC = () => {
       params.append('language', 'en');
       params.append('return_url', `${window.location.origin}/verify-success`);
       params.append('cancel_url', `${window.location.origin}/checkout`);
-      params.append('test_mode', '0');
-      
-      // Add product line item with proper formatting
       params.append('li_0_name', selectedPlan);
       params.append('li_0_price', planDetails.price);
       params.append('li_0_quantity', '1');
-      
       const checkoutUrl = `https://secure.2checkout.com/checkout/purchase?${params.toString()}`;
-      console.log('2Checkout URL:', checkoutUrl);
-      console.log('Merchant ID:', merchantId);
-      console.log('Plan:', selectedPlan, 'Price:', planDetails.price);
-      
-      // Redirect to 2Checkout
+      console.log('2Checkout fallback URL:', checkoutUrl);
       window.location.href = checkoutUrl;
     } catch (error) {
       console.error('Checkout error:', error);
