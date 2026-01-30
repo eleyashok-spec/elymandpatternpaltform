@@ -86,40 +86,28 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    // Create hidden form for 2Checkout submission
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://secure.2checkout.com/checkout/purchase';
-    form.style.display = 'none';
-
-    const fields = {
-      sid: '255895324825', // Your 2Checkout Merchant ID
-      mode: '2CO',
-      li_0_name: selectedPlan,
-      li_0_price: planDetails.price,
-      li_0_quantity: '1',
-      li_0_type: 'subscription',
-      li_0_billing_cycle: 'monthly',
-      li_0_duration: 0, // 0 = recurring until cancelled
-      email: auth?.user?.email || '',
-      external_reference: userId, // Pass user ID for webhook mapping
-      currency_code: 'USD',
-      return_url: `${window.location.origin}/verify-success`,
-      cancel_url: `${window.location.origin}/checkout`,
-      language: 'en',
-    };
-
-    Object.entries(fields).forEach(([key, value]) => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = String(value);
-      form.appendChild(input);
-    });
-
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
+    // Build query parameters for 2Checkout direct URL
+    const params = new URLSearchParams();
+    params.append('sid', '255895324825'); // Your Merchant ID
+    params.append('mode', '2CO');
+    params.append('email', auth?.user?.email || '');
+    params.append('external_reference', userId);
+    params.append('currency_code', 'USD');
+    params.append('language', 'en');
+    params.append('return_url', `${window.location.origin}/verify-success`);
+    params.append('cancel_url', `${window.location.origin}/checkout`);
+    
+    // Add product line item
+    params.append('li_0_name', selectedPlan);
+    params.append('li_0_price', planDetails.price);
+    params.append('li_0_quantity', '1');
+    params.append('li_0_type', 'subscription');
+    params.append('li_0_billing_cycle', 'monthly');
+    params.append('li_0_duration', '0');
+    
+    const checkoutUrl = `https://secure.2checkout.com/checkout/purchase?${params.toString()}`;
+    console.log('Redirecting to:', checkoutUrl);
+    window.location.href = checkoutUrl;
   };
 
   return (
