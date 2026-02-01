@@ -4,7 +4,7 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch: # This adds the manual "Run" button
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -18,6 +18,7 @@ jobs:
 
       - name: Deploy Webhook
         run: |
-          supabase functions deploy checkout-webhook --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          # The --no-verify-jwt flag allows 2Checkout to access the link
+          supabase functions deploy checkout-webhook --project-ref ${{ secrets.SUPABASE_PROJECT_ID }} --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
