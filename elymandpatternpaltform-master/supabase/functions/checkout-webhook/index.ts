@@ -88,28 +88,89 @@ serve(async (req) => {
               .from("users")
               .update({ subscription_status: "pro", subscription_id: subscriptionId })
               .eq("id", customerId);
+            // Use type casting for Deno.env to satisfy the compiler while maintaining Deno compatibility
+            const DenoEnv = (Deno as any).env;
+            const SECRET_KEY = DenoEnv.get("2CHECKOUT_SECRET_KEY") || "";
+            const SUPABASE_URL = DenoEnv.get("SUPABASE_URL") || "";
+            const SUPABASE_SERVICE_ROLE_KEY = DenoEnv.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-            if (updateError) console.error("Error updating user subscription status:", updateError);
+            const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-          } else if (eventType === "SUBSCRIPTION_CANCELLED" || eventType === "REFUND") {
-            console.log(`Processing CANCELLATION for user ${customerId}`);
+            // Helper: compute HMAC-SHA256 hex
+            async function computeHmacSHA256(secret: string, message: string) {
+              const enc = new TextEncoder();
+              const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+              const sig = await crypto.subtle.sign("HMAC", key, enc.encode(message));
+              const bytes = new Uint8Array(sig);
+              return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+            }
 
-            await supabase.from("subscriptions").update({
-              is_cancelled: true,
-              status: "canceled",
-              cancelled_at: new Date().toISOString()
-            }).eq("user_id", customerId);
+            serve(async (req) => {
+              console.log("Webhook received:", req.method);
 
-            await supabase
-              .from("users")
-              .update({ subscription_status: "free" })
-              .eq("id", customerId);
-          }
+              // Respond to GET/HEAD probes (2Checkout may validate the URL)
+              if (req.method === "GET" || req.method === "HEAD") {
+                return new Response("OK", { status: 200, headers: { "Content-Type": "text/plain" } });
+              }
 
-          console.log("Webhook processed successfully");
-          return new Response("OK", { status: 200 });
-        } catch (err) {
-          console.error("IPN Error:", err?.message || err);
-          return new Response("Internal Server Error", { status: 500 });
-        }
-      });
+              if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
+
+              try {
+                const formData = await req.formData();
+                const data: Record<string, string> = {};
+                formData.forEach((value, key) => { data[key] = value.toString(); });
+
+                console.log("Webhook data received:", { eventType: data["IPN_EVENT_TYPE"], customerId: data["EXTERNAL_REFERENCE"] });
+
+                // Optional: verify hash if secret is provided
+                const incomingHash = data["HASH"] || "";
+                if (SECRET_KEY) {
+                  if (!incomingHash) {
+                    console.warn("Missing HASH in incoming IPN");
+                    return new Response("Unauthorized", { status: 401 });
+                  }
+
+                  // Build a simple verification string: concatenation of sorted keys and values (best-effort)
+                  const keys = Object.keys(data).filter(k => k !== "HASH").sort();
+                  const verificationString = keys.map(k => `${k}=${data[k]}`).join("&");
+                  const computed = await computeHmacSHA256(SECRET_KEY, verificationString);
+                  if (computed !== incomingHash.toUpperCase()) {
+                    console.warn("HASH mismatch", { computed, incomingHash });
+                    return new Response("Unauthorized", { status: 401 });
+                  }
+                }
+
+                // Extract business data
+                const eventType = data["IPN_EVENT_TYPE"];
+                const customerId = data["EXTERNAL_REFERENCE"] || data["CUSTOMERID"]; // Passed during checkout
+                const subscriptionId = data["IPN_LICENSE_ID_0"] || `sub_${Date.now()}`;
+                const planName = data["IPN_PNAME_0"] || "Unknown Plan";
+
+                if (!customerId) throw new Error("No User ID associated with payment");
+
+                if (["ORDER_CREATED", "PAYMENT_RECEIVED", "COMPLETE"].includes(eventType)) {
+                  const { error: upsertError } = await supabase.from("subscriptions").upsert({
+                    user_id: customerId,
+                    subscription_id: subscriptionId,
+                    plan_name: planName,
+                    status: "active",
+                    current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    is_cancelled: false,
+                    created_at: new Date().toISOString()
+                  });
+
+                  if (upsertError) throw new Error(`Database error: ${upsertError.message}`);
+
+                  await supabase.from("users").update({ subscription_status: "pro", subscription_id: subscriptionId }).eq("id", customerId);
+                } else if (eventType === "SUBSCRIPTION_CANCELLED" || eventType === "REFUND") {
+                  await supabase.from("subscriptions").update({ is_cancelled: true, status: "canceled", cancelled_at: new Date().toISOString() }).eq("user_id", customerId);
+                  await supabase.from("users").update({ subscription_status: "free" }).eq("id", customerId);
+                }
+
+                console.log("Webhook processed successfully");
+                return new Response("OK", { status: 200 });
+              } catch (err) {
+                console.error("IPN Error:", err?.message || err);
+                return new Response("Internal Server Error", { status: 500 });
+              }
+            });
