@@ -1,0 +1,9 @@
+
+{
+  "name": "Elymand - Pattern Stock Platform",
+  "description": "A high-end stock-style subscription platform for premium design patterns, featuring admin and user flows with secure downloads.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
